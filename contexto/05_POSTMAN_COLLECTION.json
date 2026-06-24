@@ -1,0 +1,1249 @@
+{
+	"info": {
+		"_postman_id": "rem-api-collection",
+		"name": "REM - Requirement Management API",
+		"description": "Colección de pruebas para la API REST del Sistema de Gestión de Requisitos (REM).\n\nBase URL: http://localhost:8080/api\n\nNota: Los endpoints de requisitos requieren el header X-Usuario-Id.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080/api"
+		},
+		{
+			"key": "usuarioId",
+			"value": ""
+		},
+		{
+			"key": "jefeId",
+			"value": ""
+		},
+		{
+			"key": "analistaId",
+			"value": ""
+		},
+		{
+			"key": "tecnicoId",
+			"value": ""
+		},
+		{
+			"key": "proyectoId",
+			"value": ""
+		},
+		{
+			"key": "requisitoId",
+			"value": ""
+		},
+		{
+			"key": "requisitoId2",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "1. Usuarios",
+			"description": "CRUD de usuarios del sistema.",
+			"item": [
+				{
+					"name": "1.1 Crear Usuario - Jefe de Proyecto",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data) {",
+									"    pm.collectionVariables.set('jefeId', jsonData.data.id);",
+									"    pm.collectionVariables.set('usuarioId', jsonData.data.id);",
+									"}",
+									"pm.test('Status 201', function() {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test('Usuario creado con rol JEFE_PROYECTO', function() {",
+									"    pm.expect(jsonData.data.rol).to.eql('JEFE_PROYECTO');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"jperez\",\n    \"password\": \"123456\",\n    \"email\": \"jperez@universidad.edu.pe\",\n    \"rol\": \"JEFE_PROYECTO\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["users"]
+						}
+					}
+				},
+				{
+					"name": "1.2 Crear Usuario - Analista",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data) {",
+									"    pm.collectionVariables.set('analistaId', jsonData.data.id);",
+									"}",
+									"pm.test('Status 201', function() {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test('Usuario creado con rol ANALISTA', function() {",
+									"    pm.expect(jsonData.data.rol).to.eql('ANALISTA');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"mgarcia\",\n    \"password\": \"123456\",\n    \"email\": \"mgarcia@universidad.edu.pe\",\n    \"rol\": \"ANALISTA\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["users"]
+						}
+					}
+				},
+				{
+					"name": "1.3 Crear Usuario - Técnico",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data) {",
+									"    pm.collectionVariables.set('tecnicoId', jsonData.data.id);",
+									"}",
+									"pm.test('Status 201', function() {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test('Usuario creado con rol TECNICO', function() {",
+									"    pm.expect(jsonData.data.rol).to.eql('TECNICO');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"lrodriguez\",\n    \"password\": \"123456\",\n    \"email\": \"lrodriguez@universidad.edu.pe\",\n    \"rol\": \"TECNICO\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["users"]
+						}
+					}
+				},
+				{
+					"name": "1.4 Listar Usuarios",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Retorna lista de usuarios', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    pm.expect(jsonData.data.length).to.be.greaterThan(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["users"]
+						}
+					}
+				},
+				{
+					"name": "1.5 Obtener Usuario por ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('No contiene password', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.password).to.be.undefined;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/users/{{jefeId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "{{jefeId}}"]
+						}
+					}
+				},
+				{
+					"name": "1.6 Actualizar Usuario",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Email actualizado', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.email).to.eql('jperez.actualizado@universidad.edu.pe');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"jperez\",\n    \"password\": \"123456\",\n    \"email\": \"jperez.actualizado@universidad.edu.pe\",\n    \"rol\": \"JEFE_PROYECTO\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users/{{jefeId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "{{jefeId}}"]
+						}
+					}
+				},
+				{
+					"name": "1.7 Error - Usuario Duplicado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 409 Conflict', function() {",
+									"    pm.response.to.have.status(409);",
+									"});",
+									"pm.test('Mensaje de error claro', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.eql(false);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"jperez\",\n    \"password\": \"123456\",\n    \"email\": \"otro@universidad.edu.pe\",\n    \"rol\": \"TECNICO\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["users"]
+						}
+					}
+				},
+				{
+					"name": "1.8 Error - Validación de campos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 400 Bad Request', function() {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"pm.test('Errores de validación retornados', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.eql(false);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"\",\n    \"password\": \"12\",\n    \"email\": \"email-invalido\",\n    \"rol\": null\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": ["{{baseUrl}}"],
+							"path": ["users"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Proyectos",
+			"description": "CRUD de proyectos (RFB-006 a RFB-012).",
+			"item": [
+				{
+					"name": "2.1 Crear Proyecto",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data) {",
+									"    pm.collectionVariables.set('proyectoId', jsonData.data.id);",
+									"}",
+									"pm.test('Status 201', function() {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test('Código autogenerado PRJ-XXX', function() {",
+									"    pm.expect(jsonData.data.codigo).to.match(/^PRJ-\\d{3}$/);",
+									"});",
+									"pm.test('Estado inicial ACTIVO', function() {",
+									"    pm.expect(jsonData.data.estado).to.eql('ACTIVO');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Sistema de Gestión Académica\",\n    \"descripcion\": \"Desarrollo del sistema de gestión académica para la facultad de ingeniería. Incluye módulos de matrícula, notas y horarios.\",\n    \"jefeProyectoId\": \"{{jefeId}}\",\n    \"analistaId\": \"{{analistaId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects"]
+						}
+					}
+				},
+				{
+					"name": "2.2 Listar Proyectos (paginado)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Respuesta paginada', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('content');",
+									"    pm.expect(jsonData.data).to.have.property('totalElements');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/projects?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects"],
+							"query": [
+								{ "key": "page", "value": "0" },
+								{ "key": "size", "value": "20" }
+							]
+						}
+					}
+				},
+				{
+					"name": "2.3 Obtener Proyecto por ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Incluye datos del jefe y analista', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.jefeProyecto).to.not.be.null;",
+									"    pm.expect(jsonData.data.analista).to.not.be.null;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}"]
+						}
+					}
+				},
+				{
+					"name": "2.4 Actualizar Proyecto",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Nombre actualizado', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.nombre).to.eql('Sistema de Gestión Académica v2');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Sistema de Gestión Académica v2\",\n    \"descripcion\": \"Versión actualizada del sistema de gestión académica con módulo de reportes.\",\n    \"jefeProyectoId\": \"{{jefeId}}\",\n    \"analistaId\": \"{{analistaId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}"]
+						}
+					}
+				},
+				{
+					"name": "2.5 Error - Nombre Duplicado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 409 Conflict', function() {",
+									"    pm.response.to.have.status(409);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Sistema de Gestión Académica v2\",\n    \"descripcion\": \"Intento de duplicado\",\n    \"jefeProyectoId\": \"{{jefeId}}\",\n    \"analistaId\": \"{{analistaId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Requisitos",
+			"description": "CRUD de requisitos (RFB-013 a RFB-021).",
+			"item": [
+				{
+					"name": "3.1 Crear Requisito Funcional",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data) {",
+									"    pm.collectionVariables.set('requisitoId', jsonData.data.id);",
+									"}",
+									"pm.test('Status 201', function() {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test('Código autogenerado RF-001', function() {",
+									"    pm.expect(jsonData.data.codigo).to.eql('RF-001');",
+									"});",
+									"pm.test('Estado inicial REGISTRADO', function() {",
+									"    pm.expect(jsonData.data.estado).to.eql('REGISTRADO');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Usuario-Id",
+								"value": "{{analistaId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tipo\": \"RF\",\n    \"descripcion\": \"El sistema debe permitir al usuario registrar una nueva matrícula ingresando código de alumno, ciclo académico y lista de cursos seleccionados.\",\n    \"solicitanteId\": \"{{jefeId}}\",\n    \"prioridad\": \"ALTA\",\n    \"costoEstimado\": 1500.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/requirements",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "requirements"]
+						}
+					}
+				},
+				{
+					"name": "3.2 Crear Segundo Requisito Funcional",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data) {",
+									"    pm.collectionVariables.set('requisitoId2', jsonData.data.id);",
+									"}",
+									"pm.test('Status 201', function() {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test('Código secuencial RF-002', function() {",
+									"    pm.expect(jsonData.data.codigo).to.eql('RF-002');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Usuario-Id",
+								"value": "{{analistaId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tipo\": \"RF\",\n    \"descripcion\": \"El sistema debe generar un reporte de notas por alumno en formato PDF, incluyendo promedio ponderado y créditos acumulados.\",\n    \"solicitanteId\": \"{{jefeId}}\",\n    \"prioridad\": \"MEDIA\",\n    \"costoEstimado\": 800.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/requirements",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "requirements"]
+						}
+					}
+				},
+				{
+					"name": "3.3 Crear Requisito No Funcional",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 201', function() {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test('Código autogenerado RNF-001', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.codigo).to.eql('RNF-001');",
+									"    pm.expect(jsonData.data.tipo).to.eql('RNF');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Usuario-Id",
+								"value": "{{analistaId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tipo\": \"RNF\",\n    \"descripcion\": \"El tiempo de respuesta del sistema no debe exceder los 2 segundos para cualquier operación de consulta bajo carga normal de 50 usuarios concurrentes.\",\n    \"solicitanteId\": \"{{jefeId}}\",\n    \"prioridad\": \"CRITICA\",\n    \"costoEstimado\": 2000.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/requirements",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "requirements"]
+						}
+					}
+				},
+				{
+					"name": "3.4 Listar Requisitos (sin filtros)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Retorna 3 requisitos', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.totalElements).to.eql(3);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/requirements?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "requirements"],
+							"query": [
+								{ "key": "page", "value": "0" },
+								{ "key": "size", "value": "20" }
+							]
+						}
+					}
+				},
+				{
+					"name": "3.5 Listar Requisitos - Filtro por tipo RF",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Solo retorna requisitos RF', function() {",
+									"    var jsonData = pm.response.json();",
+									"    jsonData.data.content.forEach(function(req) {",
+									"        pm.expect(req.tipo).to.eql('RF');",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/requirements?tipo=RF",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "requirements"],
+							"query": [
+								{ "key": "tipo", "value": "RF" }
+							]
+						}
+					}
+				},
+				{
+					"name": "3.6 Listar Requisitos - Filtro por prioridad CRITICA",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Solo retorna prioridad CRITICA', function() {",
+									"    var jsonData = pm.response.json();",
+									"    jsonData.data.content.forEach(function(req) {",
+									"        pm.expect(req.prioridad).to.eql('CRITICA');",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/requirements?prioridad=CRITICA",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "requirements"],
+							"query": [
+								{ "key": "prioridad", "value": "CRITICA" }
+							]
+						}
+					}
+				},
+				{
+					"name": "3.7 Obtener Requisito por ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Contiene datos del solicitante', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.solicitante).to.not.be.null;",
+									"    pm.expect(jsonData.data.solicitante.username).to.not.be.undefined;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/requirements/{{requisitoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "requirements", "{{requisitoId}}"]
+						}
+					}
+				},
+				{
+					"name": "3.8 Actualizar Requisito (genera historial)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Prioridad actualizada a CRITICA', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.prioridad).to.eql('CRITICA');",
+									"});",
+									"pm.test('Costo actualizado', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.costoEstimado).to.eql(2500.00);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Usuario-Id",
+								"value": "{{analistaId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tipo\": \"RF\",\n    \"descripcion\": \"El sistema debe permitir al usuario registrar una nueva matrícula ingresando código de alumno, ciclo académico, lista de cursos seleccionados y modalidad de pago.\",\n    \"solicitanteId\": \"{{jefeId}}\",\n    \"prioridad\": \"CRITICA\",\n    \"costoEstimado\": 2500.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/requirements/{{requisitoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "requirements", "{{requisitoId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Estados y Asignación",
+			"description": "Cambio de estado y asignación de técnicos (RFB-022 a RFB-026).",
+			"item": [
+				{
+					"name": "4.1 Cambiar Estado → EN_ANALISIS",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Estado cambiado a EN_ANALISIS', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.estado).to.eql('EN_ANALISIS');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Usuario-Id",
+								"value": "{{analistaId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"estado\": \"EN_ANALISIS\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/requirements/{{requisitoId}}/estado",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "requirements", "{{requisitoId}}", "estado"]
+						}
+					}
+				},
+				{
+					"name": "4.2 Cambiar Estado → VALIDADO",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Estado cambiado a VALIDADO', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.estado).to.eql('VALIDADO');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Usuario-Id",
+								"value": "{{jefeId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"estado\": \"VALIDADO\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/requirements/{{requisitoId}}/estado",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "requirements", "{{requisitoId}}", "estado"]
+						}
+					}
+				},
+				{
+					"name": "4.3 Asignar Requisito a Técnico",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Usuario técnico asignado', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.asignadoA).to.not.be.null;",
+									"    pm.expect(jsonData.data.asignadoA.rol).to.eql('TECNICO');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Usuario-Id",
+								"value": "{{analistaId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"{{tecnicoId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/requirements/{{requisitoId}}/assign",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "requirements", "{{requisitoId}}", "assign"]
+						}
+					}
+				},
+				{
+					"name": "4.4 Error - Asignar a no-TECNICO",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 400 Bad Request', function() {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"pm.test('Mensaje indica que debe ser TECNICO', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include('TECNICO');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Usuario-Id",
+								"value": "{{analistaId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"{{analistaId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/requirements/{{requisitoId}}/assign",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "requirements", "{{requisitoId}}", "assign"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Historial y Dependencias",
+			"description": "Auditoría de cambios (RFB-027 a RFB-031) y dependencias.",
+			"item": [
+				{
+					"name": "5.1 Ver Historial de Cambios",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Historial contiene registros de cambios', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.totalElements).to.be.greaterThan(0);",
+									"});",
+									"pm.test('Registros tienen tipo de cambio', function() {",
+									"    var jsonData = pm.response.json();",
+									"    jsonData.data.content.forEach(function(h) {",
+									"        pm.expect(['INSERT','UPDATE','DELETE']).to.include(h.tipoCambio);",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/requirements/{{requisitoId}}/history?page=0&size=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "requirements", "{{requisitoId}}", "history"],
+							"query": [
+								{ "key": "page", "value": "0" },
+								{ "key": "size", "value": "20" }
+							]
+						}
+					}
+				},
+				{
+					"name": "5.2 Agregar Dependencia entre Requisitos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Dependencia agregada exitosamente', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.eql(true);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"dependenciaId\": \"{{requisitoId2}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/requirements/{{requisitoId}}/dependencias",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "requirements", "{{requisitoId}}", "dependencias"]
+						}
+					}
+				},
+				{
+					"name": "5.3 Ver Dependencias de un Requisito",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Tiene dependencias', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.length).to.be.greaterThan(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/requirements/{{requisitoId}}/dependencias",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "requirements", "{{requisitoId}}", "dependencias"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Trazabilidad",
+			"description": "Matriz de trazabilidad del proyecto (RFB-023).",
+			"item": [
+				{
+					"name": "6.1 Obtener Matriz de Trazabilidad",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test('Contiene requisitos con asignaciones', function() {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    var asignados = jsonData.data.filter(r => r.asignadoA !== null);",
+									"    pm.expect(asignados.length).to.be.greaterThan(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/traceability",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "traceability"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "7. Limpieza (Opcional)",
+			"description": "Pruebas de eliminación.",
+			"item": [
+				{
+					"name": "7.1 Eliminar Requisito",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-Usuario-Id",
+								"value": "{{analistaId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}/requirements/{{requisitoId2}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}", "requirements", "{{requisitoId2}}"]
+						}
+					}
+				},
+				{
+					"name": "7.2 Eliminar Proyecto (soft delete)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/projects/{{proyectoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["projects", "{{proyectoId}}"]
+						}
+					}
+				},
+				{
+					"name": "7.3 Desactivar Usuario",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', function() {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"url": {
+							"raw": "{{baseUrl}}/users/{{tecnicoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "{{tecnicoId}}"]
+						}
+					}
+				}
+			]
+		}
+	]
+}
