@@ -9,8 +9,11 @@ import pe.api.requirementmanagementapi.model.enums.TipoRequisito;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * Entidad que representa un requisito funcional o no funcional.
@@ -48,6 +51,15 @@ public class Requisito {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String descripcion;
 
+    @Column(name = "necesidad_cubierta", columnDefinition = "TEXT")
+    private String necesidadCubierta;
+
+    @Column(name = "iteracion_sprint", length = 50)
+    private String iteracionSprint;
+
+    @Column(name = "criterios_aceptacion", columnDefinition = "TEXT")
+    private String criteriosAceptacion;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "solicitante_id", nullable = false)
     private Usuario solicitante;
@@ -75,6 +87,13 @@ public class Requisito {
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
 
+    @Column(name = "nivel_ceremonia", length = 10)
+    private String nivelCeremonia;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "detalles_caso_uso", columnDefinition = "jsonb")
+    private Map<String, Object> detallesCasoUso;
+
     /**
      * Relación de dependencias/precedencias entre requisitos.
      * Un requisito puede depender de varios requisitos precedentes.
@@ -89,6 +108,19 @@ public class Requisito {
     @Builder.Default
     @ToString.Exclude
     private Set<Requisito> dependencias = new HashSet<>();
+
+    /**
+     * Relación con Stakeholders.
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "requisitos_stakeholders",
+            joinColumns = @JoinColumn(name = "requisito_id"),
+            inverseJoinColumns = @JoinColumn(name = "stakeholder_id")
+    )
+    @Builder.Default
+    @ToString.Exclude
+    private Set<Stakeholder> stakeholders = new HashSet<>();
 
     @PrePersist
     protected void onCreate() {

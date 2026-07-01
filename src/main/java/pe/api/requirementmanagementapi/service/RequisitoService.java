@@ -159,6 +159,18 @@ public class RequisitoService {
             requisito.setTipo(request.getTipo());
         }
 
+        if (!Objects.equals(requisito.getNivelCeremonia(), request.getNivelCeremonia())) {
+            registrarCambio(requisito, autor, "UPDATE", "nivel_ceremonia",
+                    requisito.getNivelCeremonia(), request.getNivelCeremonia(), null);
+            requisito.setNivelCeremonia(request.getNivelCeremonia());
+        }
+
+        if (!Objects.equals(requisito.getDetallesCasoUso(), request.getDetallesCasoUso())) {
+            registrarCambio(requisito, autor, "UPDATE", "detalles_caso_uso",
+                    "{}", "{}", "Actualización de Caso de Uso");
+            requisito.setDetallesCasoUso(request.getDetallesCasoUso());
+        }
+
         // Actualizar solicitante si cambió
         if (!Objects.equals(requisito.getSolicitante().getId(), request.getSolicitanteId())) {
             Usuario nuevoSolicitante = usuarioRepository.findById(request.getSolicitanteId())

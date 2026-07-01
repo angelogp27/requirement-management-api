@@ -34,6 +34,9 @@ public class Proyecto {
     @Column(columnDefinition = "TEXT")
     private String descripcion;
 
+    @Column(name = "ers_markdown", columnDefinition = "TEXT")
+    private String ersMarkdown;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "jefe_proyecto_id", nullable = false)
     private Usuario jefeProyecto;

@@ -11,6 +11,7 @@ import pe.api.requirementmanagementapi.model.enums.Prioridad;
 import pe.api.requirementmanagementapi.model.enums.TipoRequisito;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -30,6 +31,15 @@ public class RequisitoRequest {
     @Size(min = 10, max = 5000, message = "La descripción debe tener entre 10 y 5000 caracteres")
     private String descripcion;
 
+    /** Necesidad de negocio que este requisito cubre */
+    private String necesidadCubierta;
+
+    /** Iteración o Sprint en el que se planifica */
+    private String iteracionSprint;
+
+    /** Criterios de aceptación en formato texto/Markdown */
+    private String criteriosAceptacion;
+
     @NotNull(message = "El ID del solicitante es obligatorio")
     private UUID solicitanteId;
 
@@ -39,4 +49,7 @@ public class RequisitoRequest {
     private BigDecimal costoEstimado;
 
     private UUID asignadoAId;
+
+    private String nivelCeremonia;
+    private Map<String, Object> detallesCasoUso;
 }

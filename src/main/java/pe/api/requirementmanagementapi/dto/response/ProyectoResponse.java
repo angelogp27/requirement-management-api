@@ -27,6 +27,7 @@ public class ProyectoResponse {
     private UsuarioResponse jefeProyecto;
     private UsuarioResponse analista;
     private EstadoProyecto estado;
+    private String ersMarkdown;
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;
 
@@ -42,6 +43,7 @@ public class ProyectoResponse {
                 .jefeProyecto(UsuarioResponse.fromEntity(proyecto.getJefeProyecto()))
                 .analista(UsuarioResponse.fromEntity(proyecto.getAnalista()))
                 .estado(proyecto.getEstado())
+                .ersMarkdown(proyecto.getErsMarkdown())
                 .fechaCreacion(proyecto.getFechaCreacion())
                 .fechaActualizacion(proyecto.getFechaActualizacion())
                 .build();

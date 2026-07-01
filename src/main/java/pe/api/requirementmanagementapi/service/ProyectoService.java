@@ -136,4 +136,21 @@ public class ProyectoService {
         } while (proyectoRepository.existsByCodigo(codigo));
         return codigo;
     }
+
+    /**
+     * Obtiene la entidad Proyecto directamente (uso interno para ERS, etc.).
+     */
+    @Transactional(readOnly = true)
+    public Proyecto obtenerProyectoEntity(UUID id) {
+        return proyectoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Proyecto", "id", id));
+    }
+
+    /**
+     * Guarda la entidad Proyecto directamente (uso interno).
+     */
+    @Transactional
+    public Proyecto guardarProyectoEntity(Proyecto proyecto) {
+        return proyectoRepository.save(proyecto);
+    }
 }

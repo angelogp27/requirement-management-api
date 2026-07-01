@@ -112,4 +112,97 @@ public class ProyectoController {
 
         return new ResponseEntity<>(docBytes, headers, HttpStatus.OK);
     }
+
+    /**
+     * GET /api/projects/{id}/ers - Obtener el documento ERS Markdown.
+     */
+    @GetMapping("/{id}/ers")
+    public ResponseEntity<ApiResponse<java.util.Map<String, String>>> obtenerErs(
+            @PathVariable UUID id) {
+        var proyecto = proyectoService.obtenerProyectoEntity(id);
+        String markdown = proyecto.getErsMarkdown();
+        if (markdown == null) {
+            markdown = generarPlantillaERS(proyecto.getNombre(), proyecto.getCodigo());
+        }
+        return ResponseEntity.ok(ApiResponse.ok(java.util.Map.of("ersMarkdown", markdown)));
+    }
+
+    /**
+     * PUT /api/projects/{id}/ers - Guardar el documento ERS Markdown.
+     */
+    @PutMapping("/{id}/ers")
+    public ResponseEntity<ApiResponse<java.util.Map<String, String>>> guardarErs(
+            @PathVariable UUID id,
+            @RequestBody java.util.Map<String, String> body) {
+        var proyecto = proyectoService.obtenerProyectoEntity(id);
+        proyecto.setErsMarkdown(body.get("ersMarkdown"));
+        proyectoService.guardarProyectoEntity(proyecto);
+        return ResponseEntity.ok(ApiResponse.ok("ERS guardado exitosamente",
+                java.util.Map.of("ersMarkdown", proyecto.getErsMarkdown())));
+    }
+
+    /**
+     * Genera una plantilla ERS inicial basada en IEEE 830.
+     */
+    private String generarPlantillaERS(String nombreProyecto, String codigoProyecto) {
+        return """
+# Especificación de Requisitos de Software (ERS)
+
+## Proyecto: %s (%s)
+
+---
+
+## 1. Introducción
+
+### 1.1 Propósito
+<!-- Describa el propósito de este documento ERS -->
+
+### 1.2 Alcance
+<!-- Describa el alcance del producto de software -->
+
+### 1.3 Definiciones, Acrónimos y Abreviaturas
+<!-- Liste las definiciones importantes -->
+
+### 1.4 Referencias
+<!-- Liste los documentos de referencia -->
+
+---
+
+## 2. Descripción General
+
+### 2.1 Perspectiva del Producto
+<!-- Describa el contexto del sistema -->
+
+### 2.2 Funciones del Producto
+<!-- Resuma las funciones principales -->
+
+### 2.3 Características de los Usuarios
+<!-- Describa los tipos de usuario -->
+
+### 2.4 Restricciones
+<!-- Liste las restricciones del sistema -->
+
+### 2.5 Suposiciones y Dependencias
+<!-- Liste las suposiciones -->
+
+---
+
+## 3. Requisitos Específicos
+
+### 3.1 Requisitos Funcionales
+
+> Los requisitos funcionales del proyecto se gestionan en el módulo de Captura.
+> Puede insertar aquí un resumen o referencia a los requisitos registrados.
+
+### 3.2 Requisitos No Funcionales
+
+> Los requisitos no funcionales se gestionan igualmente en el módulo de Captura.
+
+---
+
+## 4. Apéndices
+
+<!-- Información adicional -->
+""".formatted(nombreProyecto, codigoProyecto);
+    }
 }
