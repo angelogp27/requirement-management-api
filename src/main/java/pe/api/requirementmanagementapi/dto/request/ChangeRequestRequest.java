@@ -27,6 +27,9 @@ public class ChangeRequestRequest {
     @NotBlank(message = "La justificación es obligatoria")
     private String justificacion;
 
+    @NotBlank(message = "El texto propuesto es obligatorio")
+    private String textoPropuesto;
+
     private String impactoTecnico;
     private String impactoNegocio;
     private String riesgos;

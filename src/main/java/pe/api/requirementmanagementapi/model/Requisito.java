@@ -74,9 +74,6 @@ public class Requisito {
     @Builder.Default
     private Prioridad prioridad = Prioridad.MEDIA;
 
-    @Column(name = "costo_estimado", precision = 10, scale = 2)
-    private BigDecimal costoEstimado;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "asignado_a_id")
     private Usuario asignadoA;

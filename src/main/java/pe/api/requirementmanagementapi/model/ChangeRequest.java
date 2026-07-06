@@ -38,6 +38,9 @@ public class ChangeRequest {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String justificacion;
 
+    @Column(name = "texto_propuesto", columnDefinition = "TEXT")
+    private String textoPropuesto;
+
     @Column(name = "impacto_tecnico", columnDefinition = "TEXT")
     private String impactoTecnico;
 

@@ -9,6 +9,7 @@ import java.util.UUID;
 
 @Repository
 public interface RequisitoVersionRepository extends JpaRepository<RequisitoVersion, UUID> {
+    List<RequisitoVersion> findByRequisitoId(UUID requisitoId);
     List<RequisitoVersion> findByRequisitoIdOrderByFechaCreacionDesc(UUID requisitoId);
     long countByRequisitoId(UUID requisitoId);
 }

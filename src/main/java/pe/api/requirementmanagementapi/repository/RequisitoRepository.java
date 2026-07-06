@@ -50,6 +50,10 @@ public interface RequisitoRepository extends JpaRepository<Requisito, UUID> {
 
     long countByProyectoId(UUID proyectoId);
 
+    long countByEstado(EstadoRequisito estado);
+
+    long countByProyectoIdAndEstado(UUID proyectoId, EstadoRequisito estado);
+
     boolean existsByCodigo(String codigo);
 
     boolean existsByProyectoIdAndCodigo(UUID proyectoId, String codigo);

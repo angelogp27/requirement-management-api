@@ -70,7 +70,6 @@ public class RequisitoService {
                 .descripcion(request.getDescripcion())
                 .solicitante(solicitante)
                 .prioridad(request.getPrioridad())
-                .costoEstimado(request.getCostoEstimado())
                 .build();
 
         // Asignar técnico si se proporcionó
@@ -144,13 +143,6 @@ public class RequisitoService {
             registrarCambio(requisito, autor, "UPDATE", "prioridad",
                     requisito.getPrioridad().name(), request.getPrioridad().name(), null);
             requisito.setPrioridad(request.getPrioridad());
-        }
-
-        if (!Objects.equals(requisito.getCostoEstimado(), request.getCostoEstimado())) {
-            registrarCambio(requisito, autor, "UPDATE", "costo_estimado",
-                    requisito.getCostoEstimado() != null ? requisito.getCostoEstimado().toString() : null,
-                    request.getCostoEstimado() != null ? request.getCostoEstimado().toString() : null, null);
-            requisito.setCostoEstimado(request.getCostoEstimado());
         }
 
         if (!Objects.equals(requisito.getTipo(), request.getTipo())) {

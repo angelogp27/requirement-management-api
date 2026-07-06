@@ -46,8 +46,6 @@ public class RequisitoRequest {
     @NotNull(message = "La prioridad es obligatoria")
     private Prioridad prioridad;
 
-    private BigDecimal costoEstimado;
-
     private UUID asignadoAId;
 
     private String nivelCeremonia;

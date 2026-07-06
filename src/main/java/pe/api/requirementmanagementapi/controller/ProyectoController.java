@@ -15,6 +15,7 @@ import pe.api.requirementmanagementapi.dto.response.ProyectoResponse;
 import pe.api.requirementmanagementapi.dto.response.RequisitoResponse;
 import pe.api.requirementmanagementapi.service.ProyectoService;
 import pe.api.requirementmanagementapi.service.RequisitoService;
+import pe.api.requirementmanagementapi.service.ErsExportService;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +32,7 @@ public class ProyectoController {
 
     private final ProyectoService proyectoService;
     private final RequisitoService requisitoService;
+    private final ErsExportService ersExportService;
 
     /**
      * POST /api/projects - Crear un nuevo proyecto (RFB-006).
@@ -123,7 +125,45 @@ public class ProyectoController {
         String markdown = proyecto.getErsMarkdown();
         if (markdown == null) {
             markdown = generarPlantillaERS(proyecto.getNombre(), proyecto.getCodigo());
+        } else if (markdown.startsWith("# ") || markdown.contains("## ")) {
+            // Convert legacy markdown to HTML on the fly
+            markdown = markdown.replace("\n", "<br>")
+                    .replaceAll("# (.*?)(<br>|$)", "<h1>$1</h1>$2")
+                    .replaceAll("## (.*?)(<br>|$)", "<h2>$1</h2>$2")
+                    .replaceAll("### (.*?)(<br>|$)", "<h3>$1</h3>$2");
+        } else if (markdown.contains("\\n")) {
+            // sometimes it's literally \n escaped
+            markdown = markdown.replace("\\n", "<br>");
         }
+        
+        // Cleanup any old generated stuff saved in the DB
+        if (markdown.contains("--- REQUISITOS GENERADOS AUTOMÁTICAMENTE ---")) {
+            int index = markdown.indexOf("--- REQUISITOS GENERADOS AUTOMÁTICAMENTE ---");
+            int hrIndex = markdown.lastIndexOf("<hr>", index);
+            if (hrIndex != -1 && hrIndex > index - 100) {
+                index = hrIndex;
+            }
+            markdown = markdown.substring(0, index).trim();
+        }
+        
+        String oldSection3 = "<h2>3. Requisitos Espec&iacute;ficos</h2>\n" +
+                "<h3>3.1 Requisitos Funcionales</h3>\n" +
+                "<p><strong>Los requisitos funcionales del proyecto se gestionan en el m&oacute;dulo de Captura.</strong></p>\n" +
+                "<p>Puede insertar aqu&iacute; un resumen o referencia a los requisitos registrados.</p>\n" +
+                "<h3>3.2 Requisitos No Funcionales</h3>\n" +
+                "<p><strong>Los requisitos no funcionales se gestionan igualmente en el m&oacute;dulo de Captura.</strong></p>\n" +
+                "<hr>\n";
+        markdown = markdown.replace(oldSection3, "");
+        // Append dynamic requirements preview
+        String preview = ersExportService.generateErsMarkdownPreview(id);
+        if (markdown.contains("<h2>4. Ap&eacute;ndices</h2>")) {
+            markdown = markdown.replace("<h2>4. Ap&eacute;ndices</h2>", preview + "\n<h2>4. Ap&eacute;ndices</h2>");
+        } else if (markdown.contains("<h2>4. Apéndices</h2>")) {
+            markdown = markdown.replace("<h2>4. Apéndices</h2>", preview + "\n<h2>4. Apéndices</h2>");
+        } else {
+            markdown = markdown + preview;
+        }
+        
         return ResponseEntity.ok(ApiResponse.ok(java.util.Map.of("ersMarkdown", markdown)));
     }
 
@@ -135,74 +175,80 @@ public class ProyectoController {
             @PathVariable UUID id,
             @RequestBody java.util.Map<String, String> body) {
         var proyecto = proyectoService.obtenerProyectoEntity(id);
-        proyecto.setErsMarkdown(body.get("ersMarkdown"));
+        String incomingMarkdown = body.get("ersMarkdown");
+        
+        // Strip the dynamically generated part so we don't save it
+        if (incomingMarkdown != null) {
+            String splitMarkerStart = "<div id=\"auto-requirements-preview\">";
+            String splitMarkerEnd = "</div><!-- END_AUTO_REQUIREMENTS -->";
+            int startIndex = incomingMarkdown.indexOf(splitMarkerStart);
+            if (startIndex != -1) {
+                int endIndex = incomingMarkdown.indexOf(splitMarkerEnd, startIndex);
+                if (endIndex != -1) {
+                    incomingMarkdown = incomingMarkdown.substring(0, startIndex) + incomingMarkdown.substring(endIndex + splitMarkerEnd.length());
+                } else {
+                    incomingMarkdown = incomingMarkdown.substring(0, startIndex);
+                }
+            } else if (incomingMarkdown.contains("--- REQUISITOS GENERADOS AUTOMÁTICAMENTE ---")) {
+                int index = incomingMarkdown.indexOf("<br><br><hr><br><div");
+                if (index == -1) {
+                    index = incomingMarkdown.indexOf("--- REQUISITOS GENERADOS AUTOMÁTICAMENTE ---");
+                }
+                if (index != -1) {
+                    incomingMarkdown = incomingMarkdown.substring(0, index).trim();
+                }
+            }
+        }
+        
+        proyecto.setErsMarkdown(incomingMarkdown);
         proyectoService.guardarProyectoEntity(proyecto);
+        
+        // Return with the preview appended so it stays in the editor
+        // Return with the preview appended so it stays in the editor
+        String preview = ersExportService.generateErsMarkdownPreview(id);
+        String savedMarkdown = proyecto.getErsMarkdown();
+        if (savedMarkdown != null && savedMarkdown.contains("<h2>4. Ap&eacute;ndices</h2>")) {
+            savedMarkdown = savedMarkdown.replace("<h2>4. Ap&eacute;ndices</h2>", preview + "\n<h2>4. Ap&eacute;ndices</h2>");
+        } else {
+            savedMarkdown = (savedMarkdown == null ? "" : savedMarkdown) + preview;
+        }
+        
         return ResponseEntity.ok(ApiResponse.ok("ERS guardado exitosamente",
-                java.util.Map.of("ersMarkdown", proyecto.getErsMarkdown())));
+                java.util.Map.of("ersMarkdown", savedMarkdown)));
     }
 
     /**
-     * Genera una plantilla ERS inicial basada en IEEE 830.
+     * Genera una plantilla ERS inicial basada en IEEE 830, en formato HTML.
      */
     private String generarPlantillaERS(String nombreProyecto, String codigoProyecto) {
         return """
-# Especificación de Requisitos de Software (ERS)
-
-## Proyecto: %s (%s)
-
----
-
-## 1. Introducción
-
-### 1.1 Propósito
-<!-- Describa el propósito de este documento ERS -->
-
-### 1.2 Alcance
-<!-- Describa el alcance del producto de software -->
-
-### 1.3 Definiciones, Acrónimos y Abreviaturas
-<!-- Liste las definiciones importantes -->
-
-### 1.4 Referencias
-<!-- Liste los documentos de referencia -->
-
----
-
-## 2. Descripción General
-
-### 2.1 Perspectiva del Producto
-<!-- Describa el contexto del sistema -->
-
-### 2.2 Funciones del Producto
-<!-- Resuma las funciones principales -->
-
-### 2.3 Características de los Usuarios
-<!-- Describa los tipos de usuario -->
-
-### 2.4 Restricciones
-<!-- Liste las restricciones del sistema -->
-
-### 2.5 Suposiciones y Dependencias
-<!-- Liste las suposiciones -->
-
----
-
-## 3. Requisitos Específicos
-
-### 3.1 Requisitos Funcionales
-
-> Los requisitos funcionales del proyecto se gestionan en el módulo de Captura.
-> Puede insertar aquí un resumen o referencia a los requisitos registrados.
-
-### 3.2 Requisitos No Funcionales
-
-> Los requisitos no funcionales se gestionan igualmente en el módulo de Captura.
-
----
-
-## 4. Apéndices
-
-<!-- Información adicional -->
+<h1>Especificaci&oacute;n de Requisitos de Software (ERS)</h1>
+<h2>Proyecto: %s (%s)</h2>
+<hr>
+<h2>1. Introducci&oacute;n</h2>
+<h3>1.1 Prop&oacute;sito</h3>
+<p><em>Describa el prop&oacute;sito de este documento ERS</em></p>
+<h3>1.2 Alcance</h3>
+<p><em>Describa el alcance del producto de software</em></p>
+<h3>1.3 Definiciones, Acr&oacute;nimos y Abreviaturas</h3>
+<p><em>Liste las definiciones importantes</em></p>
+<h3>1.4 Referencias</h3>
+<p><em>Liste los documentos de referencia</em></p>
+<hr>
+<h2>2. Descripci&oacute;n General</h2>
+<h3>2.1 Perspectiva del Producto</h3>
+<p><em>Describa el contexto del sistema</em></p>
+<h3>2.2 Funciones del Producto</h3>
+<p><em>Resuma las funciones principales</em></p>
+<h3>2.3 Caracter&iacute;sticas de los Usuarios</h3>
+<p><em>Describa los tipos de usuario</em></p>
+<h3>2.4 Restricciones</h3>
+<p><em>Liste las restricciones del sistema</em></p>
+<h3>2.5 Suposiciones y Dependencias</h3>
+<p><em>Liste las suposiciones</em></p>
+<hr>
+<h2>4. Ap&eacute;ndices</h2>
+<p><em>Informaci&oacute;n adicional</em></p>
 """.formatted(nombreProyecto, codigoProyecto);
     }
 }

@@ -6,5 +6,10 @@ package pe.api.requirementmanagementapi.model.enums;
  */
 public enum TipoRequisito {
     RF,
+    RNF_RENDIMIENTO,
+    RNF_DISENO,
+    RNF_CALIDAD,
+    BR,
+    IE,
     RNF
 }

@@ -36,11 +36,11 @@ public class RequisitoResponse {
     private UsuarioResponse solicitante;
     private EstadoRequisito estado;
     private Prioridad prioridad;
-    private BigDecimal costoEstimado;
     private UsuarioResponse asignadoA;
     private String nivelCeremonia;
     private Map<String, Object> detallesCasoUso;
     private List<StakeholderResponse> stakeholders;
+    private List<String> dependencias;
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;
 
@@ -59,11 +59,12 @@ public class RequisitoResponse {
                 .solicitante(UsuarioResponse.fromEntity(requisito.getSolicitante()))
                 .estado(requisito.getEstado())
                 .prioridad(requisito.getPrioridad())
-                .costoEstimado(requisito.getCostoEstimado())
                 .nivelCeremonia(requisito.getNivelCeremonia())
                 .detallesCasoUso(requisito.getDetallesCasoUso())
                 .stakeholders(requisito.getStakeholders() != null ? 
                         requisito.getStakeholders().stream().map(StakeholderResponse::fromEntity).collect(Collectors.toList()) : null)
+                .dependencias(requisito.getDependencias() != null ? 
+                        requisito.getDependencias().stream().map(Requisito::getCodigo).collect(Collectors.toList()) : null)
                 .fechaCreacion(requisito.getFechaCreacion())
                 .fechaActualizacion(requisito.getFechaActualizacion());
 

@@ -82,7 +82,6 @@ CREATE TABLE requisitos (
     solicitante_id UUID NOT NULL REFERENCES usuarios(id),
     estado VARCHAR(20) CHECK (estado IN ('REGISTRADO', 'EN_ANALISIS', 'VALIDADO', 'APROBADO')) DEFAULT 'REGISTRADO',
     prioridad VARCHAR(20) CHECK (prioridad IN ('BAJA', 'MEDIA', 'ALTA', 'CRITICA')) DEFAULT 'MEDIA',
-    costo_estimado DECIMAL(10, 2),
     asignado_a_id UUID REFERENCES usuarios(id),
     nivel_ceremonia VARCHAR(10) CHECK (nivel_ceremonia IN ('ALTA', 'BAJA')),
     detalles_caso_uso JSONB,
@@ -173,6 +172,7 @@ CREATE TABLE change_requests (
     requisito_id UUID NOT NULL REFERENCES requisitos(id) ON DELETE CASCADE,
     solicitante_id UUID NOT NULL REFERENCES usuarios(id),
     justificacion TEXT NOT NULL,
+    texto_propuesto TEXT,
     impacto_tecnico TEXT,
     impacto_negocio TEXT,
     riesgos TEXT,
@@ -221,3 +221,63 @@ CREATE INDEX idx_checklist_requisito ON checklist_validacion(requisito_id);
 CREATE INDEX idx_change_requests_requisito ON change_requests(requisito_id);
 CREATE INDEX idx_change_requests_estado ON change_requests(estado);
 CREATE INDEX idx_versiones_requisito ON requisitos_versiones(requisito_id);
+
+-- ============================================================
+-- 12. Tabla de Criterios de Aceptacion (1:N con requisitos)
+-- Cada requisito puede tener multiples criterios individuales.
+-- ============================================================
+CREATE TABLE criterios_aceptacion (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    requisito_id UUID NOT NULL REFERENCES requisitos(id) ON DELETE CASCADE,
+    descripcion TEXT NOT NULL
+);
+
+CREATE INDEX idx_criterios_requisito ON criterios_aceptacion(requisito_id);
+
+-- ============================================================
+-- 13. Tablas del Asistente de Validacion (Validation Wizard)
+-- Agrupa multiples requisitos para revision asincrona.
+-- Estados: PENDING, IN_PROGRESS, PAUSED, COMPLETED
+-- ============================================================
+CREATE TABLE validation_sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    proyecto_id UUID NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE,
+    titulo VARCHAR(255) NOT NULL,
+    estado VARCHAR(20) CHECK (estado IN ('PENDING', 'IN_PROGRESS', 'PAUSED', 'COMPLETED')) DEFAULT 'PENDING',
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE validation_session_reviewers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    sesion_id UUID NOT NULL REFERENCES validation_sessions(id) ON DELETE CASCADE,
+    correo VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE validation_session_reqs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    sesion_id UUID NOT NULL REFERENCES validation_sessions(id) ON DELETE CASCADE,
+    requisito_id UUID NOT NULL REFERENCES requisitos(id) ON DELETE CASCADE,
+    estado_validacion VARCHAR(20) CHECK (estado_validacion IN ('PENDING', 'APPROVED', 'REJECTED')) DEFAULT 'PENDING',
+    observaciones TEXT,
+    CONSTRAINT uk_val_sesion_req UNIQUE (sesion_id, requisito_id)
+);
+
+CREATE INDEX idx_val_session_proyecto ON validation_sessions(proyecto_id);
+CREATE INDEX idx_val_session_req_sesion ON validation_session_reqs(sesion_id);
+
+-- ============================================================
+-- 14. Tablas Simuladas de Impacto
+-- ============================================================
+CREATE TABLE casos_prueba (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    requisito_id UUID NOT NULL REFERENCES requisitos(id) ON DELETE CASCADE,
+    codigo VARCHAR(20) NOT NULL,
+    titulo VARCHAR(150) NOT NULL
+);
+
+CREATE TABLE objetivos_negocio (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    requisito_id UUID NOT NULL REFERENCES requisitos(id) ON DELETE CASCADE,
+    codigo VARCHAR(20) NOT NULL,
+    descripcion TEXT NOT NULL
+);

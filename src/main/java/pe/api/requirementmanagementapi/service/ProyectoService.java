@@ -49,12 +49,38 @@ public class ProyectoService {
 
         String codigo = generarCodigo();
 
+        String templateErs = "<h1>Especificación de Requisitos de Software (ERS)</h1>\n" +
+                "<p><strong>Proyecto:</strong> " + request.getNombre() + " (" + codigo + ")</p>\n\n" +
+                "<h2>1. Introducción</h2>\n" +
+                "<h3>1.1 Propósito</h3>\n" +
+                "<p>Describa el propósito de este documento ERS.</p>\n" +
+                "<h3>1.2 Alcance</h3>\n" +
+                "<p>Describa el alcance del producto de software.</p>\n" +
+                "<h3>1.3 Definiciones, Acrónimos y Abreviaturas</h3>\n" +
+                "<p>Liste las definiciones importantes.</p>\n" +
+                "<h3>1.4 Referencias</h3>\n" +
+                "<p>Liste los documentos de referencia.</p>\n\n" +
+                "<h2>2. Descripción General</h2>\n" +
+                "<h3>2.1 Perspectiva del Producto</h3>\n" +
+                "<p>Describa el contexto del sistema.</p>\n" +
+                "<h3>2.2 Funciones del Producto</h3>\n" +
+                "<p>Resuma las funciones principales.</p>\n" +
+                "<h3>2.3 Características de los Usuarios</h3>\n" +
+                "<p>Describa los tipos de usuario.</p>\n" +
+                "<h3>2.4 Restricciones</h3>\n" +
+                "<p>Liste las restricciones del sistema.</p>\n" +
+                "<h3>2.5 Suposiciones y Dependencias</h3>\n" +
+                "<p>Liste las suposiciones.</p>\n\n" +
+                "<h2>4. Apéndices</h2>\n" +
+                "<p>Información adicional.</p>\n";
+
         Proyecto proyecto = Proyecto.builder()
                 .codigo(codigo)
                 .nombre(request.getNombre())
                 .descripcion(request.getDescripcion())
                 .jefeProyecto(jefe)
                 .analista(analista)
+                .ersMarkdown(templateErs)
                 .build();
 
         proyecto = proyectoRepository.save(proyecto);

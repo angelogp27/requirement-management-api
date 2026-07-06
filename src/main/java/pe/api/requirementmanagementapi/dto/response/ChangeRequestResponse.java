@@ -25,6 +25,7 @@ public class ChangeRequestResponse {
     private String codigoRequisito;
     private UsuarioResponse solicitante;
     private String justificacion;
+    private String textoPropuesto;
     private String impactoTecnico;
     private String impactoNegocio;
     private String riesgos;
@@ -42,6 +43,7 @@ public class ChangeRequestResponse {
                 .codigoRequisito(cr.getRequisito().getCodigo())
                 .solicitante(UsuarioResponse.fromEntity(cr.getSolicitante()))
                 .justificacion(cr.getJustificacion())
+                .textoPropuesto(cr.getTextoPropuesto())
                 .impactoTecnico(cr.getImpactoTecnico())
                 .impactoNegocio(cr.getImpactoNegocio())
                 .riesgos(cr.getRiesgos())
