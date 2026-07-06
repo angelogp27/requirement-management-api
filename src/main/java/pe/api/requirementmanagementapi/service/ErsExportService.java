@@ -75,7 +75,7 @@ public class ErsExportService {
                "<h3>3.5 Atributos de Calidad</h3>\n" + seccion35Atributos.toString() + "\n" +
                "<h3>Anexo: Reglas de Negocio</h3>\n" + anexoReglasNegocio.toString() + "\n";
 
-        return "<div id=\"auto-requirements-preview\">\n" + rawPreview + "\n</div><!-- END_AUTO_REQUIREMENTS -->";
+        return "<p><strong>--- INICIO REQUISITOS GENERADOS ---</strong></p>\n" + rawPreview + "\n<p><strong>--- FIN REQUISITOS GENERADOS ---</strong></p>";
     }
 
     private void procesarRequisitoSimplePreview(Requisito req, StringBuilder sb) {
@@ -89,6 +89,11 @@ public class ErsExportService {
         if (detalles == null) {
             sb.append("</ul>\n");
             return;
+        }
+
+        String useCaseId = getString(detalles, "id");
+        if (!useCaseId.equals("N/A")) {
+            sb.append("<li><b>ID Caso de Uso:</b> ").append(useCaseId).append("</li>\n");
         }
 
         if ("ALTA".equalsIgnoreCase(req.getNivelCeremonia())) {
@@ -134,12 +139,14 @@ public class ErsExportService {
                 replacePlaceholder(paragraph, "${proyecto_codigo}", proyecto.getCodigo());
             }
 
-            // Parse custom ERS HTML and inject dynamic Section 3
             String ersHtml = proyecto.getErsMarkdown();
             if (ersHtml != null && !ersHtml.isEmpty()) {
                 String preview = generateErsMarkdownPreview(proyectoId);
-                if (ersHtml.contains("<h2>4. Ap&eacute;ndices</h2>")) {
-                    ersHtml = ersHtml.replace("<h2>4. Ap&eacute;ndices</h2>", preview + "\n<h2>4. Ap&eacute;ndices</h2>");
+                // Regex para insertar preview justo ANTES del título 4. Apéndices (ya sea <h2>, <h1>, <p><strong>)
+                String regexApendices = "(?i)(<(?:h[1-6]|p)[^>]*>\\s*(?:<strong>)?\\s*4\\.\\s*Ap(?:&eacute;|é)ndices\\s*(?:</strong>)?\\s*</(?:h[1-6]|p)>)";
+                
+                if (ersHtml.matches("(?s).*" + regexApendices + ".*")) {
+                    ersHtml = ersHtml.replaceAll(regexApendices, preview + "\n$1");
                 } else {
                     ersHtml = ersHtml + preview;
                 }
@@ -186,8 +193,22 @@ public class ErsExportService {
                 p.setBorderBottom(Borders.SINGLE);
                 continue;
             }
-            XWPFParagraph paragraph = document.createParagraph();
             String tagName = element.tagName().toLowerCase();
+            if (tagName.equals("ul") || tagName.equals("ol")) {
+                for (org.jsoup.nodes.Element li : element.children()) {
+                    if (li.tagName().equals("li")) {
+                        XWPFParagraph p = document.createParagraph();
+                        p.setIndentationLeft(720);
+                        XWPFRun bulletRun = p.createRun();
+                        bulletRun.setText("• ");
+                        bulletRun.setFontFamily("Arial");
+                        processHtmlNodes(li, p);
+                    }
+                }
+                continue;
+            }
+            
+            XWPFParagraph paragraph = document.createParagraph();
             if (tagName.equals("h1")) paragraph.setStyle("Heading1");
             else if (tagName.equals("h2")) paragraph.setStyle("Heading2");
             else if (tagName.equals("h3")) paragraph.setStyle("Heading3");
@@ -198,6 +219,7 @@ public class ErsExportService {
     }
 
     private void processHtmlNodes(org.jsoup.nodes.Node parentNode, XWPFParagraph paragraph) {
+        XWPFDocument document = paragraph.getDocument();
         for (org.jsoup.nodes.Node node : parentNode.childNodes()) {
             if (node instanceof org.jsoup.nodes.TextNode) {
                 org.jsoup.nodes.TextNode textNode = (org.jsoup.nodes.TextNode) node;
@@ -212,6 +234,22 @@ public class ErsExportService {
                 org.jsoup.nodes.Element element = (org.jsoup.nodes.Element) node;
                 if (element.tagName().equals("br")) {
                     paragraph.createRun().addBreak();
+                } else if (element.tagName().equals("p") || element.tagName().equals("div")) {
+                    XWPFParagraph p = document.createParagraph();
+                    processHtmlNodes(element, p);
+                } else if (element.tagName().equals("ul") || element.tagName().equals("ol")) {
+                    for (org.jsoup.nodes.Element li : element.children()) {
+                        if (li.tagName().equals("li")) {
+                            XWPFParagraph p = document.createParagraph();
+                            p.setIndentationLeft(720);
+                            
+                            XWPFRun bulletRun = p.createRun();
+                            bulletRun.setText("• ");
+                            bulletRun.setFontFamily("Arial");
+                            
+                            processHtmlNodes(li, p);
+                        }
+                    }
                 } else {
                     processHtmlNodes(element, paragraph);
                 }

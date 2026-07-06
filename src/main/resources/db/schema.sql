@@ -74,7 +74,7 @@ CREATE TABLE requisitos (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     proyecto_id UUID NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE,
     codigo VARCHAR(20) NOT NULL,
-    tipo VARCHAR(5) CHECK (tipo IN ('RF', 'RNF')) NOT NULL,
+    tipo VARCHAR(30) NOT NULL,
     descripcion TEXT NOT NULL,
     necesidad_cubierta TEXT,
     iteracion_sprint VARCHAR(50),

@@ -16,6 +16,8 @@ import pe.api.requirementmanagementapi.repository.ValidationSessionRepository;
 import pe.api.requirementmanagementapi.repository.ValidationSessionReqRepository;
 import pe.api.requirementmanagementapi.model.enums.EstadoRequisito;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -146,10 +148,11 @@ public class ValidationSessionService {
                 .map(sr -> {
                     Requisito r = sr.getRequisito();
 
-                    // Obtener criterios desde la tabla dedicada
-                    List<String> criterios = criterioRepository.findByRequisitoId(r.getId()).stream()
-                            .map(CriterioAceptacion::getDescripcion)
-                            .collect(Collectors.toList());
+                    // Obtener criterios desde el campo de texto (separados por saltos de línea)
+                    List<String> criterios = new ArrayList<>();
+                    if (r.getCriteriosAceptacion() != null && !r.getCriteriosAceptacion().trim().isEmpty()) {
+                        criterios = Arrays.asList(r.getCriteriosAceptacion().split("\\r?\\n"));
+                    }
 
                     String titulo = r.getCodigo();
                     if (r.getDetallesCasoUso() != null && r.getDetallesCasoUso().containsKey("nombre")) {

@@ -45,7 +45,7 @@ public class Requisito {
     private String codigo;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 5)
+    @Column(nullable = false, length = 20)
     private TipoRequisito tipo;
 
     @Column(nullable = false, columnDefinition = "TEXT")

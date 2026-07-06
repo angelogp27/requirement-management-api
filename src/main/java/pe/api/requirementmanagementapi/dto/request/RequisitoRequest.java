@@ -43,6 +43,9 @@ public class RequisitoRequest {
     @NotNull(message = "El ID del solicitante es obligatorio")
     private UUID solicitanteId;
 
+    /** IDs de los stakeholders del proyecto afectados */
+    private java.util.List<UUID> stakeholderIds;
+
     @NotNull(message = "La prioridad es obligatoria")
     private Prioridad prioridad;
 

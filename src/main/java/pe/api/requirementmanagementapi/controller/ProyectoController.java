@@ -146,6 +146,26 @@ public class ProyectoController {
             markdown = markdown.substring(0, index).trim();
         }
         
+        int startIndex = markdown.indexOf("--- INICIO REQUISITOS GENERADOS ---");
+        if (startIndex != -1) {
+            int pStart = markdown.lastIndexOf("<p>", startIndex);
+            if (pStart != -1) {
+                startIndex = pStart;
+            }
+            int endIndex = markdown.indexOf("--- FIN REQUISITOS GENERADOS ---", startIndex);
+            if (endIndex != -1) {
+                int pEnd = markdown.indexOf("</p>", endIndex);
+                if (pEnd != -1) {
+                    endIndex = pEnd + 4; // length of "</p>"
+                } else {
+                    endIndex = endIndex + "--- FIN REQUISITOS GENERADOS ---".length();
+                }
+                markdown = markdown.substring(0, startIndex) + markdown.substring(endIndex);
+            } else {
+                markdown = markdown.substring(0, startIndex);
+            }
+        }
+        
         String oldSection3 = "<h2>3. Requisitos Espec&iacute;ficos</h2>\n" +
                 "<h3>3.1 Requisitos Funcionales</h3>\n" +
                 "<p><strong>Los requisitos funcionales del proyecto se gestionan en el m&oacute;dulo de Captura.</strong></p>\n" +
@@ -154,12 +174,15 @@ public class ProyectoController {
                 "<p><strong>Los requisitos no funcionales se gestionan igualmente en el m&oacute;dulo de Captura.</strong></p>\n" +
                 "<hr>\n";
         markdown = markdown.replace(oldSection3, "");
+
+        // Limpiar cualquier residuo de vistas previas antiguas (sin marcadores)
+        String regexOldPreview = "(?i)<h2>3\\.\\s*Requisitos Espec(?:&iacute;|í)ficos</h2>.*?(?=<h[1-6]>4\\.\\s*Ap(?:&eacute;|é)ndices</h[1-6]>)";
+        markdown = markdown.replaceAll("(?s)" + regexOldPreview, "");
         // Append dynamic requirements preview
         String preview = ersExportService.generateErsMarkdownPreview(id);
-        if (markdown.contains("<h2>4. Ap&eacute;ndices</h2>")) {
-            markdown = markdown.replace("<h2>4. Ap&eacute;ndices</h2>", preview + "\n<h2>4. Ap&eacute;ndices</h2>");
-        } else if (markdown.contains("<h2>4. Apéndices</h2>")) {
-            markdown = markdown.replace("<h2>4. Apéndices</h2>", preview + "\n<h2>4. Apéndices</h2>");
+        String regexApendices = "(?i)(<(?:h[1-6]|p)[^>]*>\\s*(?:<strong>)?\\s*4\\.\\s*Ap(?:&eacute;|é)ndices\\s*(?:</strong>)?\\s*</(?:h[1-6]|p)>)";
+        if (markdown != null && markdown.matches("(?s).*" + regexApendices + ".*")) {
+            markdown = markdown.replaceAll(regexApendices, preview + "\n$1");
         } else {
             markdown = markdown + preview;
         }
@@ -177,19 +200,28 @@ public class ProyectoController {
         var proyecto = proyectoService.obtenerProyectoEntity(id);
         String incomingMarkdown = body.get("ersMarkdown");
         
-        // Strip the dynamically generated part so we don't save it
         if (incomingMarkdown != null) {
-            String splitMarkerStart = "<div id=\"auto-requirements-preview\">";
-            String splitMarkerEnd = "</div><!-- END_AUTO_REQUIREMENTS -->";
-            int startIndex = incomingMarkdown.indexOf(splitMarkerStart);
+            int startIndex = incomingMarkdown.indexOf("--- INICIO REQUISITOS GENERADOS ---");
             if (startIndex != -1) {
-                int endIndex = incomingMarkdown.indexOf(splitMarkerEnd, startIndex);
+                int pStart = incomingMarkdown.lastIndexOf("<p>", startIndex);
+                if (pStart != -1) {
+                    startIndex = pStart;
+                }
+                int endIndex = incomingMarkdown.indexOf("--- FIN REQUISITOS GENERADOS ---", startIndex);
                 if (endIndex != -1) {
-                    incomingMarkdown = incomingMarkdown.substring(0, startIndex) + incomingMarkdown.substring(endIndex + splitMarkerEnd.length());
+                    int pEnd = incomingMarkdown.indexOf("</p>", endIndex);
+                    if (pEnd != -1) {
+                        endIndex = pEnd + 4; // length of "</p>"
+                    } else {
+                        endIndex = endIndex + "--- FIN REQUISITOS GENERADOS ---".length();
+                    }
+                    incomingMarkdown = incomingMarkdown.substring(0, startIndex) + incomingMarkdown.substring(endIndex);
                 } else {
                     incomingMarkdown = incomingMarkdown.substring(0, startIndex);
                 }
-            } else if (incomingMarkdown.contains("--- REQUISITOS GENERADOS AUTOMÁTICAMENTE ---")) {
+            }
+
+            if (incomingMarkdown.contains("--- REQUISITOS GENERADOS AUTOMÁTICAMENTE ---")) {
                 int index = incomingMarkdown.indexOf("<br><br><hr><br><div");
                 if (index == -1) {
                     index = incomingMarkdown.indexOf("--- REQUISITOS GENERADOS AUTOMÁTICAMENTE ---");
@@ -199,6 +231,12 @@ public class ProyectoController {
                 }
             }
         }
+
+        // Limpiar residuos
+        if (incomingMarkdown != null) {
+            String regexOldPreview = "(?i)<h2>3\\.\\s*Requisitos Espec(?:&iacute;|í)ficos</h2>.*?(?=<h[1-6]>4\\.\\s*Ap(?:&eacute;|é)ndices</h[1-6]>)";
+            incomingMarkdown = incomingMarkdown.replaceAll("(?s)" + regexOldPreview, "");
+        }
         
         proyecto.setErsMarkdown(incomingMarkdown);
         proyectoService.guardarProyectoEntity(proyecto);
@@ -207,8 +245,9 @@ public class ProyectoController {
         // Return with the preview appended so it stays in the editor
         String preview = ersExportService.generateErsMarkdownPreview(id);
         String savedMarkdown = proyecto.getErsMarkdown();
-        if (savedMarkdown != null && savedMarkdown.contains("<h2>4. Ap&eacute;ndices</h2>")) {
-            savedMarkdown = savedMarkdown.replace("<h2>4. Ap&eacute;ndices</h2>", preview + "\n<h2>4. Ap&eacute;ndices</h2>");
+        String regexApendices = "(?i)(<(?:h[1-6]|p)[^>]*>\\s*(?:<strong>)?\\s*4\\.\\s*Ap(?:&eacute;|é)ndices\\s*(?:</strong>)?\\s*</(?:h[1-6]|p)>)";
+        if (savedMarkdown != null && savedMarkdown.matches("(?s).*" + regexApendices + ".*")) {
+            savedMarkdown = savedMarkdown.replaceAll(regexApendices, preview + "\n$1");
         } else {
             savedMarkdown = (savedMarkdown == null ? "" : savedMarkdown) + preview;
         }

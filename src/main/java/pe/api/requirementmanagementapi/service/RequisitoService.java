@@ -22,7 +22,10 @@ import pe.api.requirementmanagementapi.model.enums.TipoRequisito;
 import pe.api.requirementmanagementapi.repository.ProyectoRepository;
 import pe.api.requirementmanagementapi.repository.RequisitoHistorialRepository;
 import pe.api.requirementmanagementapi.repository.RequisitoRepository;
+import pe.api.requirementmanagementapi.repository.StakeholderRepository;
 import pe.api.requirementmanagementapi.repository.UsuarioRepository;
+import pe.api.requirementmanagementapi.model.Stakeholder;
+import java.util.HashSet;
 
 import java.util.List;
 import java.util.Objects;
@@ -45,6 +48,7 @@ public class RequisitoService {
     private final ProyectoRepository proyectoRepository;
     private final UsuarioRepository usuarioRepository;
     private final RequisitoHistorialRepository historialRepository;
+    private final StakeholderRepository stakeholderRepository;
 
     /**
      * Crea un nuevo requisito con código autogenerado (RF-001, RNF-001...).
@@ -68,6 +72,9 @@ public class RequisitoService {
                 .codigo(codigo)
                 .tipo(request.getTipo())
                 .descripcion(request.getDescripcion())
+                .necesidadCubierta(request.getNecesidadCubierta())
+                .iteracionSprint(request.getIteracionSprint())
+                .criteriosAceptacion(request.getCriteriosAceptacion())
                 .solicitante(solicitante)
                 .prioridad(request.getPrioridad())
                 .build();
@@ -77,6 +84,11 @@ public class RequisitoService {
             Usuario asignado = usuarioRepository.findById(request.getAsignadoAId())
                     .orElseThrow(() -> new ResourceNotFoundException("Usuario (Asignado)", "id", request.getAsignadoAId()));
             requisito.setAsignadoA(asignado);
+        }
+
+        if (request.getStakeholderIds() != null && !request.getStakeholderIds().isEmpty()) {
+            Set<Stakeholder> stakeholders = new HashSet<>(stakeholderRepository.findAllById(request.getStakeholderIds()));
+            requisito.setStakeholders(stakeholders);
         }
 
         requisito = requisitoRepository.save(requisito);
@@ -139,6 +151,24 @@ public class RequisitoService {
             requisito.setDescripcion(request.getDescripcion());
         }
 
+        if (!Objects.equals(requisito.getNecesidadCubierta(), request.getNecesidadCubierta())) {
+            registrarCambio(requisito, autor, "UPDATE", "necesidad_cubierta",
+                    requisito.getNecesidadCubierta(), request.getNecesidadCubierta(), null);
+            requisito.setNecesidadCubierta(request.getNecesidadCubierta());
+        }
+
+        if (!Objects.equals(requisito.getIteracionSprint(), request.getIteracionSprint())) {
+            registrarCambio(requisito, autor, "UPDATE", "iteracion_sprint",
+                    requisito.getIteracionSprint(), request.getIteracionSprint(), null);
+            requisito.setIteracionSprint(request.getIteracionSprint());
+        }
+
+        if (!Objects.equals(requisito.getCriteriosAceptacion(), request.getCriteriosAceptacion())) {
+            registrarCambio(requisito, autor, "UPDATE", "criterios_aceptacion",
+                    requisito.getCriteriosAceptacion(), request.getCriteriosAceptacion(), null);
+            requisito.setCriteriosAceptacion(request.getCriteriosAceptacion());
+        }
+
         if (!Objects.equals(requisito.getPrioridad(), request.getPrioridad())) {
             registrarCambio(requisito, autor, "UPDATE", "prioridad",
                     requisito.getPrioridad().name(), request.getPrioridad().name(), null);
@@ -185,6 +215,11 @@ public class RequisitoService {
             registrarCambio(requisito, autor, "UPDATE", "asignado_a_id",
                     asignadoActualId != null ? asignadoActualId.toString() : null,
                     request.getAsignadoAId() != null ? request.getAsignadoAId().toString() : null, null);
+        }
+        
+        if (request.getStakeholderIds() != null) {
+            Set<Stakeholder> stakeholders = new HashSet<>(stakeholderRepository.findAllById(request.getStakeholderIds()));
+            requisito.setStakeholders(stakeholders);
         }
 
         requisito = requisitoRepository.save(requisito);
