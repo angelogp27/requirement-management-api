@@ -146,25 +146,7 @@ public class ProyectoController {
             markdown = markdown.substring(0, index).trim();
         }
         
-        int startIndex = markdown.indexOf("--- INICIO REQUISITOS GENERADOS ---");
-        if (startIndex != -1) {
-            int pStart = markdown.lastIndexOf("<p>", startIndex);
-            if (pStart != -1) {
-                startIndex = pStart;
-            }
-            int endIndex = markdown.indexOf("--- FIN REQUISITOS GENERADOS ---", startIndex);
-            if (endIndex != -1) {
-                int pEnd = markdown.indexOf("</p>", endIndex);
-                if (pEnd != -1) {
-                    endIndex = pEnd + 4; // length of "</p>"
-                } else {
-                    endIndex = endIndex + "--- FIN REQUISITOS GENERADOS ---".length();
-                }
-                markdown = markdown.substring(0, startIndex) + markdown.substring(endIndex);
-            } else {
-                markdown = markdown.substring(0, startIndex);
-            }
-        }
+        markdown = removeGeneratedRequirements(markdown);
         
         String oldSection3 = "<h2>3. Requisitos Espec&iacute;ficos</h2>\n" +
                 "<h3>3.1 Requisitos Funcionales</h3>\n" +
@@ -201,25 +183,7 @@ public class ProyectoController {
         String incomingMarkdown = body.get("ersMarkdown");
         
         if (incomingMarkdown != null) {
-            int startIndex = incomingMarkdown.indexOf("--- INICIO REQUISITOS GENERADOS ---");
-            if (startIndex != -1) {
-                int pStart = incomingMarkdown.lastIndexOf("<p>", startIndex);
-                if (pStart != -1) {
-                    startIndex = pStart;
-                }
-                int endIndex = incomingMarkdown.indexOf("--- FIN REQUISITOS GENERADOS ---", startIndex);
-                if (endIndex != -1) {
-                    int pEnd = incomingMarkdown.indexOf("</p>", endIndex);
-                    if (pEnd != -1) {
-                        endIndex = pEnd + 4; // length of "</p>"
-                    } else {
-                        endIndex = endIndex + "--- FIN REQUISITOS GENERADOS ---".length();
-                    }
-                    incomingMarkdown = incomingMarkdown.substring(0, startIndex) + incomingMarkdown.substring(endIndex);
-                } else {
-                    incomingMarkdown = incomingMarkdown.substring(0, startIndex);
-                }
-            }
+            incomingMarkdown = removeGeneratedRequirements(incomingMarkdown);
 
             if (incomingMarkdown.contains("--- REQUISITOS GENERADOS AUTOMÁTICAMENTE ---")) {
                 int index = incomingMarkdown.indexOf("<br><br><hr><br><div");
@@ -289,5 +253,39 @@ public class ProyectoController {
 <h2>4. Ap&eacute;ndices</h2>
 <p><em>Informaci&oacute;n adicional</em></p>
 """.formatted(nombreProyecto, codigoProyecto);
+    }
+    
+    private String removeGeneratedRequirements(String markdown) {
+        if (markdown == null) return null;
+        int startIndex = markdown.indexOf("--- INICIO REQUISITOS GENERADOS ---");
+        if (startIndex != -1) {
+            int divStart = markdown.lastIndexOf("<div", startIndex);
+            if (divStart != -1 && divStart > startIndex - 100) {
+                startIndex = divStart;
+            } else {
+                int pStart = markdown.lastIndexOf("<p>", startIndex);
+                if (pStart != -1 && pStart > startIndex - 100) {
+                    startIndex = pStart;
+                }
+            }
+            int endIndex = markdown.indexOf("--- FIN REQUISITOS GENERADOS ---", startIndex);
+            if (endIndex != -1) {
+                int divEnd = markdown.indexOf("</div>", endIndex);
+                if (divEnd != -1) {
+                    endIndex = divEnd + 6;
+                } else {
+                    int pEnd = markdown.indexOf("</p>", endIndex);
+                    if (pEnd != -1) {
+                        endIndex = pEnd + 4;
+                    } else {
+                        endIndex = endIndex + "--- FIN REQUISITOS GENERADOS ---".length();
+                    }
+                }
+                markdown = markdown.substring(0, startIndex) + markdown.substring(endIndex);
+            } else {
+                markdown = markdown.substring(0, startIndex);
+            }
+        }
+        return markdown;
     }
 }

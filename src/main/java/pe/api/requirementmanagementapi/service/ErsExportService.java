@@ -12,9 +12,17 @@ import pe.api.requirementmanagementapi.repository.RequisitoRepository;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import org.apache.poi.util.Units;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -75,7 +83,7 @@ public class ErsExportService {
                "<h3>3.5 Atributos de Calidad</h3>\n" + seccion35Atributos.toString() + "\n" +
                "<h3>Anexo: Reglas de Negocio</h3>\n" + anexoReglasNegocio.toString() + "\n";
 
-        return "<p><strong>--- INICIO REQUISITOS GENERADOS ---</strong></p>\n" + rawPreview + "\n<p><strong>--- FIN REQUISITOS GENERADOS ---</strong></p>";
+        return "<div style=\"display:none;\" class=\"req-marker\">--- INICIO REQUISITOS GENERADOS ---</div>\n" + rawPreview + "\n<div style=\"display:none;\" class=\"req-marker\">--- FIN REQUISITOS GENERADOS ---</div>";
     }
 
     private void procesarRequisitoSimplePreview(Requisito req, StringBuilder sb) {
@@ -133,14 +141,53 @@ public class ErsExportService {
         // Load the Word document
         try (XWPFDocument document = new XWPFDocument(templateInputStream)) {
             
-            // Replace basic placeholders in title page
-            for (XWPFParagraph paragraph : document.getParagraphs()) {
-                replacePlaceholder(paragraph, "${proyecto_nombre}", proyecto.getNombre());
-                replacePlaceholder(paragraph, "${proyecto_codigo}", proyecto.getCodigo());
+            // Clear template contents to avoid double cover page
+            for (int i = document.getBodyElements().size() - 1; i >= 0; i--) {
+                document.removeBodyElement(i);
             }
 
             String ersHtml = proyecto.getErsMarkdown();
             if (ersHtml != null && !ersHtml.isEmpty()) {
+                // Generar Portada, Ficha de Documento y Encabezado
+                createCoverPage(document, proyecto);
+                createDocumentInfoSheet(document, proyecto);
+                // Set Different First Page to hide page number on the cover
+                org.openxmlformats.schemas.wordprocessingml.x2006.main.CTSectPr sectPr = document.getDocument().getBody().getSectPr();
+                if (sectPr == null) sectPr = document.getDocument().getBody().addNewSectPr();
+                sectPr.addNewTitlePg().setVal(Boolean.TRUE);
+
+                // Add Page Break BEFORE TOC to put it in a new section/page
+                XWPFParagraph pBreakBeforeToc = document.createParagraph();
+                pBreakBeforeToc.createRun().addBreak(org.apache.poi.xwpf.usermodel.BreakType.PAGE);
+
+                // Add TOC
+                XWPFParagraph pToc = document.createParagraph();
+                pToc.setAlignment(ParagraphAlignment.CENTER);
+                XWPFRun rToc = pToc.createRun();
+                rToc.setText("Índice");
+                rToc.setBold(true);
+                rToc.setFontSize(18);
+                rToc.setColor("2F5496");
+                rToc.setFontFamily("Calibri");
+                
+                XWPFParagraph tocNote = document.createParagraph();
+                XWPFRun rTocNote = tocNote.createRun();
+                rTocNote.setText("(Haga clic derecho en esta área y seleccione 'Actualizar campos' para generar el índice automático)");
+                rTocNote.setItalic(true);
+                rTocNote.setColor("808080");
+                rTocNote.setFontSize(10);
+                
+                XWPFParagraph tocCode = document.createParagraph();
+                org.openxmlformats.schemas.wordprocessingml.x2006.main.CTSimpleField fld = tocCode.getCTP().addNewFldSimple();
+                fld.setInstr("TOC \\o \"1-3\" \\h \\z \\u");
+                
+                XWPFParagraph pBreak = document.createParagraph();
+                pBreak.createRun().addBreak(org.apache.poi.xwpf.usermodel.BreakType.PAGE);
+
+                createHeader(document, proyecto);
+                createFooter(document);
+                // Remove document.enforceUpdateFields() to prevent the popup on open
+
                 String preview = generateErsMarkdownPreview(proyectoId);
                 // Regex para insertar preview justo ANTES del título 4. Apéndices (ya sea <h2>, <h1>, <p><strong>)
                 String regexApendices = "(?i)(<(?:h[1-6]|p)[^>]*>\\s*(?:<strong>)?\\s*4\\.\\s*Ap(?:&eacute;|é)ndices\\s*(?:</strong>)?\\s*</(?:h[1-6]|p)>)";
@@ -150,6 +197,21 @@ public class ErsExportService {
                 } else {
                     ersHtml = ersHtml + preview;
                 }
+                // Strip redundant default template title and project so they don't duplicate the cover page
+                ersHtml = ersHtml.replaceAll("(?is)<h[1-6][^>]*>\\s*Especificaci(?:&oacute;|ó)n de Requisitos de Software \\(ERS\\)\\s*</h[1-6]>", "");
+                ersHtml = ersHtml.replaceAll("(?is)<h[1-6][^>]*>\\s*(?:<strong>)?\\s*Proyecto:\\s*.*?(?:</strong>)?\\s*</h[1-6]>", "");
+                ersHtml = ersHtml.replaceAll("(?is)<p[^>]*>\\s*(?:<strong>)?\\s*Proyecto:\\s*.*?(?:</strong>)?\\s*</p>", "");
+                // Also explicitly remove the exact text if it leaked as raw text
+                String exactProjectText = "Proyecto: " + proyecto.getNombre() + " (" + proyecto.getCodigo() + ")";
+                ersHtml = ersHtml.replace(exactProjectText, "");
+                
+                // Remove the hidden markers from the Word Export
+                ersHtml = ersHtml.replaceAll("(?is)<div[^>]*>\\s*--- INICIO REQUISITOS GENERADOS ---\\s*</div>", "");
+                ersHtml = ersHtml.replaceAll("(?is)<div[^>]*>\\s*--- FIN REQUISITOS GENERADOS ---\\s*</div>", "");
+
+                // Remove any leading <hr> or <br> that might be left orphaned at the start of the document
+                ersHtml = ersHtml.replaceFirst("(?is)^\\s*(?:<br\\s*/?>\\s*|<hr\\s*/?>\\s*)+", "");
+
                 parseHtmlToDocx(ersHtml, document);
             }
 
@@ -209,10 +271,24 @@ public class ErsExportService {
             }
             
             XWPFParagraph paragraph = document.createParagraph();
-            if (tagName.equals("h1")) paragraph.setStyle("Heading1");
-            else if (tagName.equals("h2")) paragraph.setStyle("Heading2");
-            else if (tagName.equals("h3")) paragraph.setStyle("Heading3");
-            else if (tagName.equals("li")) paragraph.setIndentationLeft(720);
+            paragraph.setSpacingAfter(200); // 10 pt spacing after paragraph
+            
+            if (tagName.equals("h1")) {
+                paragraph.setStyle("Heading1");
+                paragraph.setPageBreak(true);
+            } else if (tagName.equals("h2")) {
+                paragraph.setStyle("Heading2");
+                paragraph.setSpacingBefore(400);
+                if (element.text().matches("^[1-9]\\.\\s.*") || element.text().toLowerCase().contains("apéndice")) {
+                    paragraph.setPageBreak(true);
+                }
+            } else if (tagName.equals("h3")) {
+                paragraph.setStyle("Heading3");
+                paragraph.setSpacingBefore(200);
+            } else if (tagName.equals("li")) {
+                paragraph.setIndentationLeft(720);
+                paragraph.setSpacingAfter(100);
+            }
             
             processHtmlNodes(element, paragraph);
         }
@@ -236,16 +312,18 @@ public class ErsExportService {
                     paragraph.createRun().addBreak();
                 } else if (element.tagName().equals("p") || element.tagName().equals("div")) {
                     XWPFParagraph p = document.createParagraph();
+                    p.setSpacingAfter(200);
                     processHtmlNodes(element, p);
                 } else if (element.tagName().equals("ul") || element.tagName().equals("ol")) {
                     for (org.jsoup.nodes.Element li : element.children()) {
                         if (li.tagName().equals("li")) {
                             XWPFParagraph p = document.createParagraph();
                             p.setIndentationLeft(720);
+                            p.setSpacingAfter(100);
                             
                             XWPFRun bulletRun = p.createRun();
                             bulletRun.setText("• ");
-                            bulletRun.setFontFamily("Arial");
+                            bulletRun.setFontFamily("Calibri");
                             
                             processHtmlNodes(li, p);
                         }
@@ -258,14 +336,15 @@ public class ErsExportService {
     }
 
     private void applyInlineStyles(org.jsoup.nodes.Element parentElement, XWPFRun run) {
-        run.setFontFamily("Arial");
+        run.setFontFamily("Calibri");
         run.setFontSize(11); // default
         String tagName = parentElement.tagName().toLowerCase();
         if (tagName.equals("strong") || tagName.equals("b") || tagName.matches("h[1-6]")) run.setBold(true);
         if (tagName.equals("em") || tagName.equals("i")) run.setItalic(true);
         if (tagName.equals("u")) run.setUnderline(UnderlinePatterns.SINGLE);
         
-        if (tagName.equals("h1")) run.setFontSize(24);
+        if (tagName.matches("h[1-6]")) run.setColor("2F5496");
+        if (tagName.equals("h1")) run.setFontSize(22);
         else if (tagName.equals("h2")) run.setFontSize(18);
         else if (tagName.equals("h3")) run.setFontSize(14);
         
@@ -275,7 +354,238 @@ public class ErsExportService {
             if (pTag.equals("strong") || pTag.equals("b")) run.setBold(true);
             if (pTag.equals("em") || pTag.equals("i")) run.setItalic(true);
             if (pTag.equals("u")) run.setUnderline(UnderlinePatterns.SINGLE);
+            if (pTag.matches("h[1-6]")) {
+                run.setColor("2F5496");
+                if (pTag.equals("h1")) run.setFontSize(22);
+                else if (pTag.equals("h2")) run.setFontSize(18);
+                else if (pTag.equals("h3")) run.setFontSize(14);
+            }
             parent = parent.parent();
+        }
+    }
+
+    private void createCoverPage(XWPFDocument document, Proyecto proyecto) {
+        XWPFParagraph pTitle = document.createParagraph();
+        pTitle.setAlignment(ParagraphAlignment.CENTER);
+        pTitle.setSpacingBefore(3000);
+        XWPFRun rTitle = pTitle.createRun();
+        rTitle.setText("Documento de Especificación de Requisitos (ERS)");
+        rTitle.setBold(true);
+        rTitle.setFontSize(36);
+        rTitle.setColor("000000"); // Letra formal negra grande
+        rTitle.setFontFamily("Calibri");
+
+        XWPFParagraph pProject = document.createParagraph();
+        pProject.setAlignment(ParagraphAlignment.CENTER);
+        pProject.setSpacingBefore(1000);
+        XWPFRun rProject = pProject.createRun();
+        rProject.setText("Proyecto: " + proyecto.getNombre());
+        rProject.setBold(true);
+        rProject.setFontSize(22);
+        rProject.setColor("000000");
+        rProject.setFontFamily("Calibri");
+
+        XWPFParagraph pInfo = document.createParagraph();
+        pInfo.setAlignment(ParagraphAlignment.CENTER);
+        pInfo.setSpacingBefore(3000);
+        XWPFRun rInfo = pInfo.createRun();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        String currentDate = LocalDate.now().format(formatter);
+        rInfo.setText("Fecha: " + currentDate);
+        rInfo.addBreak();
+        
+        String managerName = "No Asignado";
+        if (proyecto.getJefeProyecto() != null && proyecto.getJefeProyecto().getUsername() != null) {
+            managerName = proyecto.getJefeProyecto().getUsername();
+        }
+        rInfo.setText("Jefe de Proyecto: " + managerName);
+        rInfo.setFontSize(14);
+        rInfo.setFontFamily("Calibri");
+        
+        rInfo.addBreak(BreakType.PAGE);
+    }
+
+    private void createDocumentInfoSheet(XWPFDocument document, Proyecto proyecto) {
+        XWPFParagraph pTitle = document.createParagraph();
+        pTitle.setStyle("Heading1");
+        XWPFRun rTitle = pTitle.createRun();
+        rTitle.setText("Ficha del documento");
+        rTitle.setBold(true);
+        rTitle.setFontSize(18);
+        rTitle.setColor("2F5496");
+        rTitle.setFontFamily("Calibri");
+
+        pTitle.setSpacingAfter(400);
+
+        XWPFTable table = document.createTable(3, 4);
+        table.setWidth("100%");
+        
+        XWPFTableRow headerRow = table.getRow(0);
+        String[] headers = {"Fecha", "Revisión", "Autor", "Modificación"};
+        for (int i = 0; i < 4; i++) {
+            XWPFTableCell cell = headerRow.getCell(i);
+            cell.setColor("D9D9D9");
+            XWPFParagraph p = cell.getParagraphArray(0);
+            p.setAlignment(ParagraphAlignment.CENTER);
+            XWPFRun r = p.createRun();
+            r.setText(headers[i]);
+            r.setBold(true);
+            r.setFontFamily("Calibri");
+        }
+
+        for (int i = 1; i <= 2; i++) {
+            XWPFTableRow row = table.getRow(i);
+            row.getCell(0).setText("[Fecha]");
+            row.getCell(1).setText("[Rev]");
+            row.getCell(2).setText("[Descripcion]");
+            row.getCell(3).setText("[Descripcion]");
+            
+            for (int j = 0; j < 4; j++) {
+                XWPFParagraph p = row.getCell(j).getParagraphArray(0);
+                if (p.getRuns().size() > 0) {
+                    XWPFRun r = p.getRuns().get(0);
+                    r.setColor("0000FF");
+                    r.setItalic(true);
+                    r.setFontFamily("Calibri");
+                }
+            }
+        }
+
+        XWPFParagraph pText = document.createParagraph();
+        pText.setSpacingBefore(1000);
+        pText.setSpacingAfter(1000);
+        XWPFRun rText = pText.createRun();
+        rText.setFontFamily("Calibri");
+        rText.setText("Documento validado por las partes en fecha: ");
+        
+        XWPFRun rDatePlaceholder = pText.createRun();
+        rDatePlaceholder.setText("[Fecha]");
+        rDatePlaceholder.setColor("0000FF");
+        rDatePlaceholder.setItalic(true);
+        rDatePlaceholder.setFontFamily("Calibri");
+
+        XWPFTable sigTable = document.createTable(1, 2);
+        sigTable.setWidth("100%");
+        sigTable.getCTTbl().getTblPr().unsetTblBorders();
+        
+        XWPFTableRow sigRow = sigTable.getRow(0);
+        
+        XWPFTableCell clientCell = sigRow.getCell(0);
+        XWPFParagraph pc1 = clientCell.getParagraphArray(0);
+        pc1.setAlignment(ParagraphAlignment.CENTER);
+        XWPFRun rc1 = pc1.createRun();
+        rc1.setText("Por el cliente");
+        rc1.setFontFamily("Calibri");
+        
+        XWPFParagraph pc2 = clientCell.addParagraph();
+        pc2.setSpacingBefore(500);
+        XWPFRun rc2 = pc2.createRun();
+        rc2.setText("[Firma]");
+        rc2.setFontFamily("Calibri");
+        
+        XWPFParagraph pc3 = clientCell.addParagraph();
+        pc3.setSpacingBefore(1000);
+        XWPFRun rc3 = pc3.createRun();
+        rc3.setText("_______________________________________");
+        
+        XWPFParagraph pc4 = clientCell.addParagraph();
+        XWPFRun rc4 = pc4.createRun();
+        rc4.setText("Sr./Sra. ");
+        rc4.setFontFamily("Calibri");
+        XWPFRun rc4_2 = pc4.createRun();
+        rc4_2.setText("[Nombre]");
+        rc4_2.setColor("0000FF");
+        rc4_2.setFontFamily("Calibri");
+        
+        XWPFTableCell provCell = sigRow.getCell(1);
+        XWPFParagraph pp1 = provCell.getParagraphArray(0);
+        pp1.setAlignment(ParagraphAlignment.CENTER);
+        XWPFRun rp1 = pp1.createRun();
+        rp1.setText("Por la empresa suministradora");
+        rp1.setFontFamily("Calibri");
+        
+        XWPFParagraph pp2 = provCell.addParagraph();
+        pp2.setSpacingBefore(500);
+        XWPFRun rp2 = pp2.createRun();
+        rp2.setText("[Firma]");
+        rp2.setFontFamily("Calibri");
+        
+        XWPFParagraph pp3 = provCell.addParagraph();
+        pp3.setSpacingBefore(1000);
+        XWPFRun rp3 = pp3.createRun();
+        rp3.setText("_______________________________________");
+        
+        XWPFParagraph pp4 = provCell.addParagraph();
+        XWPFRun rp4 = pp4.createRun();
+        rp4.setText("Sr./Sra. ");
+        rp4.setFontFamily("Calibri");
+        XWPFRun rp4_2 = pp4.createRun();
+        rp4_2.setText("[Nombre]");
+        rp4_2.setColor("0000FF");
+        rp4_2.setFontFamily("Calibri");
+        rp4_2.addBreak(BreakType.PAGE);
+    }
+
+    private void createHeader(XWPFDocument document, Proyecto proyecto) {
+        try {
+            org.apache.poi.wp.usermodel.HeaderFooterType[] types = {
+                org.apache.poi.wp.usermodel.HeaderFooterType.FIRST, 
+                org.apache.poi.wp.usermodel.HeaderFooterType.DEFAULT
+            };
+            
+            for (org.apache.poi.wp.usermodel.HeaderFooterType type : types) {
+                XWPFHeader header = document.createHeader(type);
+                XWPFTable table = header.createTable(1, 2);
+                table.setWidth("100%");
+                table.getCTTbl().getTblPr().unsetTblBorders();
+                table.setBottomBorder(XWPFTable.XWPFBorderType.SINGLE, 4, 0, "000000");
+                
+                XWPFTableCell leftCell = table.getRow(0).getCell(0);
+                XWPFParagraph pLeft = leftCell.getParagraphArray(0);
+                pLeft.setAlignment(ParagraphAlignment.LEFT);
+                pLeft.setSpacingAfter(0);
+                XWPFRun rLeft = pLeft.createRun();
+                
+                org.springframework.core.io.ClassPathResource imgResource = new org.springframework.core.io.ClassPathResource("img/logo.png");
+                if (imgResource.exists()) {
+                    try (java.io.InputStream is = imgResource.getInputStream()) {
+                        rLeft.addPicture(is, XWPFDocument.PICTURE_TYPE_PNG, "logo.png", org.apache.poi.util.Units.toEMU(120), org.apache.poi.util.Units.toEMU(40));
+                    }
+                } else {
+                    rLeft.setText("[Logo]");
+                }
+                
+                XWPFTableCell rightCell = table.getRow(0).getCell(1);
+                XWPFParagraph pRight = rightCell.getParagraphArray(0);
+                pRight.setAlignment(ParagraphAlignment.RIGHT);
+                pRight.setSpacingAfter(0);
+                XWPFRun rRight1 = pRight.createRun();
+                rRight1.setText("Especificación de Requisitos, estándar de IEEE 830");
+                rRight1.setFontFamily("Calibri");
+                rRight1.setFontSize(10);
+                rRight1.addBreak();
+                XWPFRun rRight2 = pRight.createRun();
+                rRight2.setText(proyecto.getNombre());
+                rRight2.setFontFamily("Calibri");
+                rRight2.setFontSize(10);
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void createFooter(XWPFDocument document) {
+        try {
+            org.apache.poi.xwpf.usermodel.XWPFFooter footer = document.createFooter(org.apache.poi.wp.usermodel.HeaderFooterType.DEFAULT);
+            XWPFParagraph p = footer.createParagraph();
+            p.setAlignment(ParagraphAlignment.RIGHT);
+            XWPFRun r = p.createRun();
+            r.setText("Página ");
+            r.setFontFamily("Calibri");
+            p.getCTP().addNewFldSimple().setInstr("PAGE \\* MERGEFORMAT");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
